@@ -1,0 +1,70 @@
+version: '3'
+
+services:
+  go_app:
+    container_name: go_app
+    image: go_app:local
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    tty: true
+    volumes:
+      - ./api/src:/src
+    # ports:
+    #   - 3000:3000
+    command: ["go", "run", "main.go"]
+    depends_on:
+      - db
+
+  next_app:
+    container_name: next_app
+    image: next_app:local
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    tty: true
+    volumes:
+      - ./frontend/src:/src
+    # ports:
+    #   - 3001:3000
+
+  db:
+    container_name: go_db
+    image: mongo:latest
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password!
+      - MONGO_INITDB_DATABASE=go_db
+    volumes:
+      - v_go:/data/db
+  
+  dbclient:
+    container_name: go_dbclient
+    image: mongo-express
+    environment:
+      - ME_CONFIG_OPTIONS_EDITORTHEME=ambiance
+      - ME_CONFIG_BASICAUTH_USERNAME=root
+      - ME_CONFIG_BASICAUTH_PASSWORD=password!
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password!
+      - ME_CONFIG_MONGODB_SERVER=db
+    ports:
+      - 8081:8081
+    depends_on:
+      - db
+
+  web:
+    container_name: go_web
+    image: go_nginx:local
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    depends_on:
+      - go_app
+      - next_app
+
+volumes:
+  v_go:  
+
